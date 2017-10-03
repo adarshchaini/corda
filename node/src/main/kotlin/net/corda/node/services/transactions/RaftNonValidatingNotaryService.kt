@@ -5,18 +5,19 @@ import net.corda.core.flows.NotaryFlow
 import net.corda.core.node.services.TimeWindowChecker
 import net.corda.core.node.services.TrustedAuthorityNotaryService
 import net.corda.node.services.api.ServiceHubInternal
+import net.corda.node.services.config.RaftConfig
 import java.security.PublicKey
 
 /** A non-validating notary service operated by a group of mutually trusting parties, uses the Raft algorithm to achieve consensus. */
-class RaftNonValidatingNotaryService(override val services: ServiceHubInternal, override val notaryIdentityKey: PublicKey) : TrustedAuthorityNotaryService() {
-    companion object {
-        val type = SimpleNotaryService.type.getSubType("raft")
-    }
-
+class RaftNonValidatingNotaryService(override val services: ServiceHubInternal,
+                                     override val notaryIdentityKey: PublicKey,
+                                     raftConfig: RaftConfig) : TrustedAuthorityNotaryService() {
     override val timeWindowChecker: TimeWindowChecker = TimeWindowChecker(services.clock)
-    override val uniquenessProvider: RaftUniquenessProvider = RaftUniquenessProvider(services)
+    override val uniquenessProvider: RaftUniquenessProvider = RaftUniquenessProvider(services, raftConfig)
 
-    override fun createServiceFlow(otherPartySession: FlowSession): NotaryFlow.Service = NonValidatingNotaryFlow(otherPartySession, this)
+    override fun createServiceFlow(otherPartySession: FlowSession): NotaryFlow.Service {
+        return NonValidatingNotaryFlow(otherPartySession, this)
+    }
 
     override fun start() {
         uniquenessProvider.start()
